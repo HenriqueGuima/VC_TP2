@@ -8,6 +8,7 @@
 
 int main(void)
 {
+	//Rosas passou aqui!
 	// Video
 	char videofile[50] = "video1_tp2.mp4";
 	//char videofile[50] = "video.avi";
