@@ -88,23 +88,23 @@ int vc_rgb_to_hsv_imgimg(IplImage *src, IplImage *dst) {
 			}
 
 
-			datadst[pos_dst] = (unsigned char)(hue*255/360);
+			/*datadst[pos_dst] = (unsigned char)(hue*255/360);
 			datadst[pos_dst + 1] = (unsigned char)(sat * 255);
-			datadst[pos_dst + 2] = (unsigned char)(val);
+			datadst[pos_dst + 2] = (unsigned char)(val);*/
 
 			////Procura a cor e torna-a branca 
-			//if (hue > 30 && hue < 190 && sat > 0 && val > 200)
-			//{
-			//	datadst[pos_dst] = 255;
-			//	datadst[pos_dst + 1] = 255;
-			//	datadst[pos_dst + 2] = 255;
-			//}
-			//else //O resto fica a preto
-			//{
-			//	datadst[pos_dst] = 0;
-			//	datadst[pos_dst + 1] = 0;
-			//	datadst[pos_dst + 2] = 0;
-			//}
+			if (hue > 20 && hue < 120 && sat > 10 && val > 20)
+			{
+				datadst[pos_dst] = 0;
+				datadst[pos_dst + 1] = 0;
+				datadst[pos_dst + 2] = 0;
+			}
+			else //O resto fica a preto
+			{
+				datadst[pos_dst] =255;
+				datadst[pos_dst + 1] = 255;
+				datadst[pos_dst + 2] = 255;
+			}
 		}
 	}
 	return 1;
