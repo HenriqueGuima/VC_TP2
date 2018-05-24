@@ -1,12 +1,10 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 
+#include "Header.h"
 #include <stdio.h>
 #include <opencv\cv.h>
 #include <opencv\cxcore.h>
 #include <opencv\highgui.h>
-
-
-
 
 int main(void)
 {
@@ -15,6 +13,7 @@ int main(void)
 	//char videofile[50] = "video.avi";
 	CvCapture *capture;
 	IplImage *frame;
+
 	struct
 	{
 		int width, height;
@@ -69,6 +68,12 @@ int main(void)
 
 		/* N�mero da frame a processar */
 		video.nframe = (int)cvGetCaptureProperty(capture, CV_CAP_PROP_POS_FRAMES);
+
+		IplImage* frameAux = cvCreateImage(cvGetSize(frame), 8, 3); // allocate a 3 channel byte image
+
+		cvCopy(frame, frameAux, NULL); // OR return img_src_cpy;
+		
+		vc_rgb_to_hsv_imgimg(frameAux, frame);
 
 		/* Exemplo de inser��o texto na frame */
 		sprintf(str, "RESOLUCAO: %dx%d", video.width, video.height);
