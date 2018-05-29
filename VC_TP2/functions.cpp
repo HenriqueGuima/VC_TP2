@@ -106,7 +106,7 @@ int vc_rgb_to_hsv_imgimg(IplImage *src, IplImage *dst) {
 			//}
 
 			//Procura a cor e torna-a branca 
-			if (hue > 180 && hue < 300 && sat > 0.1 && val > 110)
+			if (hue > 200 && hue < 290 && sat > 0.1 && val > 110)
 			{
 				datadst[pos_dst] = 0;
 				datadst[pos_dst + 1] = 0;
@@ -160,4 +160,66 @@ int vc_binary_dilate(IplImage *src, IplImage *dst, int kernel)
 	}
 
 	return 1;
+}
+
+int vc_binary_erode(IplImage *src, IplImage *dst, int kernel)
+{
+	unsigned char *datasrc = (unsigned char *)src->imageData;
+	unsigned char *datadst = (unsigned char *)dst->imageData;
+	int width = src->width;
+	int height = src->height;
+	int bytesperline = src->nChannels;
+	int channels = src->nChannels;
+	int x, y;
+	int xx, yy;
+	int xxyymax = (kernel - 1) / 2;
+	int xxyymin = -xxyymax;
+	long int pos, posk;
+	unsigned char threshold;
+	int aux = 255;
+
+	// Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->imageData == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height) || (src->nChannels != dst->nChannels)) return 0;
+	if (channels != 1) return 0;
+
+	memset(datadst, 0, width*height);
+
+	for (y = 0; y<height; y++)
+	{
+		for (x = 0; x<width; x++)
+		{
+			pos = y * bytesperline + x * channels;
+			aux = 255;
+
+			// NxM Vizinhos
+			for (yy = xxyymin; yy <= xxyymax; yy++)
+			{
+				for (xx = xxyymin; xx <= xxyymax; xx++)
+				{
+					if ((y + yy >= 0) && (y + yy < height) && (x + xx >= 0) && (x + xx < width))
+					{
+						posk = (y + yy) * bytesperline + (x + xx) * channels;
+
+						if (datasrc[posk] == 0) aux = 0;
+					}
+				}
+			}
+
+			datadst[pos] = aux;
+		}
+	}
+
+	return 1;
+}
+
+int vc_binary_open(IplImage *src, IplImage *dst, int sizeerode, int sizedilate)
+{
+	int ret = 1;
+	
+	IplImage *aux = cvCreateImage(cvGetSize(src), src->depth, src->nChannels);
+
+	ret &= vc_binary_erode(src, aux, sizeerode);
+	ret &= vc_binary_dilate(aux, dst, sizedilate);
+	return ret;
 }

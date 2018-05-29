@@ -75,7 +75,8 @@ int main(void)
 		cvCopy(frame, frameAux, NULL); // OR return img_src_cpy;
 		
 		vc_rgb_to_hsv_imgimg(frameAux, frame);
-		vc_binary_dilate(frame, frameaux, 5);
+		//vc_binary_dilate(frame, frameAux, 10);
+		vc_binary_open(frame, frameAux, 10, 10);
 
 		/* Exemplo de inser��o texto na frame */
 		sprintf(str, "RESOLUCAO: %dx%d", video.width, video.height);
