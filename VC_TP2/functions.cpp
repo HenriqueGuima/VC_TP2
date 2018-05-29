@@ -88,12 +88,25 @@ int vc_rgb_to_hsv_imgimg(IplImage *src, IplImage *dst) {
 			}
 
 
-			/*datadst[pos_dst] = (unsigned char)(hue*255/360);
+			datadst[pos_dst] = (unsigned char)(hue*255/360);
 			datadst[pos_dst + 1] = (unsigned char)(sat * 255);
-			datadst[pos_dst + 2] = (unsigned char)(val);*/
+			datadst[pos_dst + 2] = (unsigned char)(val);
 
-			////Procura a cor e torna-a branca 
-			if (hue > 20 && hue < 120 && sat > 10 && val > 20)
+			datadst[pos_dst + 2 ] = datadst[pos_dst + 2 ] * 0.5;
+
+			//if (datadst[pos_dst+2] > 190 && datadst[pos_dst+2] < 300 && sat > 1 && sat < 20)
+			//{
+			//	datadst[pos_dst + 2] = 255;
+			//}
+			//else
+			//{
+			//	/*datadst[pos_dst] = 255;
+			//	datadst[pos_dst + 1] = 255;
+			//	datadst[pos_dst + 2] = 255;*/
+			//}
+
+			//Procura a cor e torna-a branca 
+			if (hue > 180 && hue < 300 && sat > 0.1 && val > 110)
 			{
 				datadst[pos_dst] = 0;
 				datadst[pos_dst + 1] = 0;
@@ -101,11 +114,50 @@ int vc_rgb_to_hsv_imgimg(IplImage *src, IplImage *dst) {
 			}
 			else //O resto fica a preto
 			{
-				datadst[pos_dst] =255;
+				datadst[pos_dst] = 255;
 				datadst[pos_dst + 1] = 255;
 				datadst[pos_dst + 2] = 255;
 			}
 		}
 	}
+	return 1;
+}
+
+int vc_binary_dilate(IplImage *src, IplImage *dst, int kernel)
+{
+
+	unsigned char *datasrc = (unsigned char *)src->imageData;
+	unsigned char *datadst = (unsigned char *)dst->imageData;
+	int width = src->width;
+	int height = src->height;
+	int bytesperline = src->nChannels;
+	int channels = src->nChannels;
+	int x, y, xx, yy, max, min;
+	long int pos, pos_k;
+	int offset = kernel / 2;
+	int aux;
+
+	memset(datadst, 0, width*height);
+
+	for (y = offset; y < height - offset; y++)
+	{
+		for (x = offset; x < width - offset; x++)
+		{
+			pos = y * bytesperline + x * channels;
+			aux = 0;
+
+			for (yy = -offset; yy <= offset; yy++)
+			{
+				for (xx = -offset; xx <= offset; xx++)
+				{
+					pos_k = (y + yy) * width + (x + xx) * channels; //Posição do vizinho
+
+					if (datasrc[pos_k] == 255) aux = 255;
+				}
+			}
+			datadst[pos] = aux;
+		}
+	}
+
 	return 1;
 }

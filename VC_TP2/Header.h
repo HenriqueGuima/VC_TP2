@@ -29,3 +29,4 @@ typedef struct {
 } OVC;
 
 int vc_rgb_to_hsv_imgimg(IplImage *src, IplImage *dst);
+int vc_binary_dilate(IplImage *src, IplImage *dst, int kernel);
