@@ -73,10 +73,14 @@ int main(void)
 		IplImage* frameAux = cvCreateImage(cvGetSize(frame), 8, 3); // allocate a 3 channel byte image
 
 		cvCopy(frame, frameAux, NULL); // OR return img_src_cpy;
-		
+
+		vc_gray_gaussian_filter(frameAux, frame, 5*5);
+
 		vc_rgb_to_hsv_imgimg(frameAux, frame);
-		//vc_binary_dilate(frame, frameAux, 10);
+		////vc_binary_dilate(frame, frameAux, 10);
 		vc_binary_open(frame, frameAux, 10, 10);
+
+		//Blobs
 
 		/* Exemplo de inser��o texto na frame */
 		sprintf(str, "RESOLUCAO: %dx%d", video.width, video.height);

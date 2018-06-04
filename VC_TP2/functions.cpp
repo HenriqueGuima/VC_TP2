@@ -223,3 +223,68 @@ int vc_binary_open(IplImage *src, IplImage *dst, int sizeerode, int sizedilate)
 	ret &= vc_binary_dilate(aux, dst, sizedilate);
 	return ret;
 }
+
+//Função utilizada para aplicar um filtro sobre uma imagem gray e, desta forma, remover todo o seu ruído
+int vc_gray_gaussian_filter(IplImage *src, IplImage *dst, float n)
+{
+	unsigned char *datasrc = (unsigned char *)src->imageData;
+	unsigned char *datadst = (unsigned char *)dst->imageData;
+	int width = src->width;
+	int height = src->height;
+
+	int bytesperline = src->nChannels;
+	int channels = src->nChannels;
+
+	int x, y, i, j;
+	int pos, pos_m;
+	int total = 0;
+	int mask = 5;
+
+	// mascara gaussian
+	int gaussian[5][5] =
+	{//	{ min, max}
+	{ 1, 4,  7,  4,  1 },
+	{ 4, 16, 26, 16, 4 },
+	{ 7 ,26, 41, 26, 7 },
+	{ 4, 16, 26, 16, 4 },
+	{ 1, 4,  7,  4,  1 },
+	};
+
+	if ((src->width <= 0) || (src->height <= 0) || (src->imageData == NULL))
+	{
+		return 0;
+	}
+
+	if ((src->width != dst->width) || (src->height != dst->height))
+	{
+		return 0;
+	}
+
+	if (src->nChannels != 3 || dst->nChannels != 3)
+	{
+		return 0;
+	}
+
+	for (y = 2; y < height - 2; y++)
+	{
+		for (x = 2; x < width - 2; x++)
+		{
+			pos = y * bytesperline + x * channels;
+
+			for (i = 0; i < mask; i++) {
+				for (j = 0; j < mask; j++) {
+					// mask -2 para que a imagem analizada seja de pos-2 a pos+2
+					pos_m = (y + i - 2)*bytesperline + (x + j - 2) * channels;
+					total += gaussian[i][j] * datasrc[pos_m];
+				}
+			}
+			// pintar a branco os limites
+			if (y == 0 || y == 1 || x == 0 || x == 1) datadst[pos] = (unsigned char)255;
+			else datadst[pos] = (unsigned char)((int)(total / 273));
+			total = 0;
+			//if (datadst[pos] != 255) printf("datadst[pos] = %uc", datadst[pos]);
+		}
+	}
+
+	return 0;
+}
