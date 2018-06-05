@@ -106,17 +106,17 @@ int vc_rgb_to_hsv_imgimg(IplImage *src, IplImage *dst) {
 			//}
 
 			//Procura a cor e torna-a branca 
-			if (hue > 200 && hue < 290 && sat > 0.1 && val > 110)
-			{
-				datadst[pos_dst] = 0;
-				datadst[pos_dst + 1] = 0;
-				datadst[pos_dst + 2] = 0;
-			}
-			else //O resto fica a preto
+			if (hue > 200 && hue < 290 && sat > 0.1 && val > 90)
 			{
 				datadst[pos_dst] = 255;
 				datadst[pos_dst + 1] = 255;
 				datadst[pos_dst + 2] = 255;
+			}
+			else //O resto fica a preto
+			{
+				datadst[pos_dst] = 0;
+				datadst[pos_dst + 1] = 0;
+				datadst[pos_dst + 2] = 0;
 			}
 		}
 	}
@@ -287,4 +287,191 @@ int vc_gray_gaussian_filter(IplImage *src, IplImage *dst, float n)
 	}
 
 	return 0;
+}
+
+int vc_gray_to_binary(IplImage *src, IplImage *dst, int threshold) {
+	unsigned char *datasrc = (unsigned char *)src->imageData;
+	int bytesperline_src = src->width * src->nChannels;
+	int channels_src = src->nChannels;
+	unsigned char *datadst = (unsigned char *)dst->imageData;
+	int bytesperline_dst = dst->width * dst->nChannels;
+	int channels_dst = dst->nChannels;
+	int width = src->width;
+	int height = src->height;
+	int x, y;
+	long int pos_src, pos_dst;
+
+	if ((src->width <= 0) || (src->height <= 0) || (src->imageData == NULL))
+	{
+		return 0;
+	}
+
+	if ((src->width != dst->width) || (src->height != dst->height))
+	{
+		return 0;
+	}
+
+	if ((src->nChannels != 1) || (dst->nChannels!= 1))
+	{
+		return 0;
+	}
+
+	for (y = 0; y < height; y++)
+	{
+		for (x = 0; x < width; x++)
+		{
+			pos_src = y * bytesperline_src + x * channels_src;
+			pos_dst = y * bytesperline_dst + x * channels_dst;
+
+			if (datasrc[pos_src]>threshold)
+			{
+				datadst[pos_src] = 255;
+			}
+			else
+			{
+				datadst[pos_src] = 0;
+			}
+		}
+	}
+}
+
+int vc_rgb_to_gray(IplImage *src, IplImage *dst) {
+	unsigned char *datasrc = (unsigned char *)src->imageData;
+	unsigned char *datadst = (unsigned char *)dst->imageData;
+	int bytesperline_src = src->width * src->nChannels;
+	int bytesperline_dst = dst->width * dst->nChannels;
+	int channels_src = src->nChannels;
+	int channels_dst = dst->nChannels;
+	int width_src = src->width;
+	int width_dst = dst->width;
+	int height_src = src->height;
+	int height_dst = dst->height;
+	int x, y;
+	long int pos_src, pos_dst;
+	float rf, gf, bf;
+
+	if ((src->width <= 0) || (src->height <= 0) || (src->imageData == NULL))
+	{
+		return 0;
+	}
+
+	if ((src->width != dst->width) || (src->height != dst->height))
+	{
+		return 0;
+	}
+
+	if ((src->nChannels != 3) || (dst->nChannels != 1))
+	{
+		return 0;
+	}
+
+	for (y = 0; y < height_src; y++)
+	{
+		for (x = 0; x < width_src; x++)
+		{
+			pos_src = y * bytesperline_src + x * channels_src;
+			pos_dst = y * bytesperline_dst + x * channels_dst;
+
+			rf = (float)datasrc[pos_src];
+			gf = (float)datasrc[pos_src + 1];
+			bf = (float)datasrc[pos_src + 2];
+
+			datadst[pos_dst] = (unsigned char)((rf*0.299) + (gf*0.587) + (bf*0.114));
+		}
+	}
+	return 1;
+}
+
+int vc_gray_edge_sobel(IplImage *src, IplImage *dst, float th) // th = [0.001, 1.000]
+{
+	unsigned char *datasrc = (unsigned char *)src->imageData;
+	unsigned char *datadst = (unsigned char *)dst->imageData;
+	int width = src->width;
+	int height = src->height;
+	int bytesperline = src->nChannels;
+	int channels = src->nChannels;
+	int x, y;
+	long int posX, posA, posB, posC, posD, posE, posF, posG, posH;
+	int i, size;
+	int histmax, histthreshold;
+	int sumx, sumy;
+	int hist[256] = { 0 };
+
+	// Verificacao de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->imageData == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height) || (src->nChannels != dst->nChannels)) return 0;
+	if (channels != 1) return 0;
+
+	size = width * height;
+
+	for (y = 1; y<height - 1; y++)
+	{
+		for (x = 1; x<width - 1; x++)
+		{
+			posA = (y - 1) * bytesperline + (x - 1) * channels;
+			posB = (y - 1) * bytesperline + x * channels;
+			posC = (y - 1) * bytesperline + (x + 1) * channels;
+			posD = y * bytesperline + (x - 1) * channels;
+			posX = y * bytesperline + x * channels;
+			posE = y * bytesperline + (x + 1) * channels;
+			posF = (y + 1) * bytesperline + (x - 1) * channels;
+			posG = (y + 1) * bytesperline + x * channels;
+			posH = (y + 1) * bytesperline + (x + 1) * channels;
+
+			sumx = datasrc[posA] * -1;
+			sumx += datasrc[posD] * -2;
+			sumx += datasrc[posF] * -1;
+
+			sumx += datasrc[posC] * +1;
+			sumx += datasrc[posE] * +2;
+			sumx += datasrc[posH] * +1;
+			sumx = sumx / 4; // 4 = 1 + 2 + 1
+
+			sumy = datasrc[posA] * -1;
+			sumy += datasrc[posB] * -2;
+			sumy += datasrc[posC] * -1;
+
+			sumy += datasrc[posF] * +1;
+			sumy += datasrc[posG] * +2;
+			sumy += datasrc[posH] * +1;
+			sumy = sumy / 4; // 4 = 1 + 2 + 1
+
+			datadst[posX] = (unsigned char)sqrt((double)(sumx*sumx + sumy * sumy));
+			//datadst[posX] = (unsigned char) (sqrt((double) (sumx*sumx + sumy*sumy)) / 4.0);
+		}
+	}
+
+	// Compute a grey level histogram
+	for (y = 0; y<height; y++)
+	{
+		for (x = 0; x<width; x++)
+		{
+			hist[datadst[y * bytesperline + x * channels]]++;
+		}
+	}
+
+	// Threshold at the middle of the occupied levels
+	histmax = 0;
+	for (i = 0; i <= 255; i++)
+	{
+		histmax += hist[i];
+
+		// th = Sobel Threshold
+		if (histmax >= (((float)size) * th)) break;
+	}
+	histthreshold = i;
+
+	// Apply the threshold
+	for (y = 0; y<height; y++)
+	{
+		for (x = 0; x<width; x++)
+		{
+			posX = y * bytesperline + x * channels;
+
+			if (datadst[posX] >= histthreshold) datadst[posX] = 255;
+			else datadst[posX] = 0;
+		}
+	}
+
+	return 1;
 }

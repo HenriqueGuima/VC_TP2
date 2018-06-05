@@ -66,17 +66,21 @@ int main(void)
 		/* N�mero da frame a processar */
 		video.nframe = (int)cvGetCaptureProperty(capture, CV_CAP_PROP_POS_FRAMES);
 
+		
 		IplImage* frameAux = cvCreateImage(cvGetSize(frame), 8, 3); // allocate a 3 channel byte image
+		/*IplImage* frameGray = cvCreateImage(cvGetSize(frame), 8, 1);
+		IplImage* frameBin = cvCreateImage(cvGetSize(frame), 8, 1);
+		IplImage* frameGauss = cvCreateImage(cvGetSize(frame), 8, 1);
+		IplImage* frameSobel = cvCreateImage(cvGetSize(frame), 8, 1);*/
 
 		cvCopy(frame, frameAux, NULL); // OR return img_src_cpy;
 
-		//blur
-
-		vc_gray_gaussian_filter(frameAux, frame, 5*5);
-
 		vc_rgb_to_hsv_imgimg(frameAux, frame);
-		////vc_binary_dilate(frame, frameAux, 10);
-		vc_binary_open(frame, frameAux, 10, 10);
+
+		/*vc_rgb_to_hsv_imgimg(frameAux, frameBin);
+		vc_rgb_to_gray(frame, frameGray);
+		vc_gray_gaussian_filter(frameGray, frameGauss, 5*5);*/
+		//vc_gray_edge_sobel(frameGray, frameAux, 5);
 
 		//Blobs
 
@@ -97,7 +101,10 @@ int main(void)
 		// Fa�a o seu c�digo aqui...
 
 		/* Exibe a frame */
-		cvShowImage("VC - TP2", frame);
+		//cvShowImage("VC - TP2 - aux", frameAux);
+		cvShowImage("VC - TP2", frameGauss);
+		//cvShowImage("VC - TP2", frameGray);
+		//cvShowImage("VC - TP2", frameSobel);
 
 		/* Sai da aplica��o, se o utilizador premir a tecla 'q' */
 		key = cvWaitKey(1);
@@ -105,6 +112,7 @@ int main(void)
 
 	/* Fecha a janela */
 	cvDestroyWindow("VC - TP2");
+	//cvDestroyWindow("VC - TP2 - aux");
 
 	/* Fecha o ficheiro de v�deo */
 	cvReleaseCapture(&capture);
