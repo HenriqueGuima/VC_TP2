@@ -1,10 +1,6 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 
 #include "Header.h"
-#include <stdio.h>
-#include <opencv\cv.h>
-#include <opencv\cxcore.h>
-#include <opencv\highgui.h>
 
 int main(void)
 {
@@ -34,14 +30,14 @@ int main(void)
 
 	/* Leitura de v�deo de um ficheiro */
 	/* NOTA IMPORTANTE:
-	O ficheiro video-tp2.avi dever� estar localizado no mesmo direct�rio que o ficheiro de c�digo fonte.
+	O ficheiro video-tp2.avi dever estar localizado no mesmo direct�rio que o ficheiro de codigo fonte.
 	*/
 	capture = cvCaptureFromFile(videofile);
 
-	/* Verifica se foi poss�vel abrir o ficheiro de v�deo */
+	/* Verifica se foi possvel abrir o ficheiro de vdeo */
 	if (!capture)
 	{
-		fprintf(stderr, "Erro ao abrir o ficheiro de v�deo!\n");
+		fprintf(stderr, "Erro ao abrir o ficheiro de video!\n");
 		return 1;
 	}
 
@@ -73,6 +69,8 @@ int main(void)
 		IplImage* frameAux = cvCreateImage(cvGetSize(frame), 8, 3); // allocate a 3 channel byte image
 
 		cvCopy(frame, frameAux, NULL); // OR return img_src_cpy;
+
+		//blur
 
 		vc_gray_gaussian_filter(frameAux, frame, 5*5);
 
