@@ -38,3 +38,4 @@ int vc_rgb_to_gray(IplImage *src, IplImage *dst);
 int vc_gray_edge_sobel(IplImage *src, IplImage *dst, float th);
 int vc_binary_blob_info(IplImage *src, OVC *blobs, int nblobs);
 OVC* vc_binary_blob_labellingOpencv(IplImage *src, IplImage *dst, int *nlabels);
+int vc_draw_boundingbox(IplImage *src, OVC blob);

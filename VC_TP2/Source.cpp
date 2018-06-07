@@ -33,7 +33,7 @@ int main(void)
 	int	ORANGE_MAX[3] = { 15, 255, 255 };
 	IplImage *gray = NULL, *grayAux = NULL;
 	IplImage *grayAux1 = NULL, *grayAux2 = NULL;
-	IplImage *grayBin = NULL, *BinBlob = NULL;
+	IplImage *grayBin = NULL, *BinBlob = NULL, *grayBinAux = NULL;
 	/* Leitura de vídeo de um ficheiro */
 	capture = cvCaptureFromFile(videofile);
 	int key = 0;
@@ -102,17 +102,24 @@ int main(void)
 		if (grayAux1 == NULL) grayAux1 = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
 		if (grayAux2 == NULL) grayAux2 = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
 		if (grayBin == NULL) grayBin = cvCreateImage(cvGetSize(frameAux), 8, 1);
+		if (grayBinAux == NULL) grayBinAux = cvCreateImage(cvGetSize(frameAux), 8, 1);
 		if (BinBlob == NULL) BinBlob = cvCreateImage(cvGetSize(frameAux), 8, 1);
 
 		vc_rgb_to_gray(frameAux, gray);
 
-		cvDilate(gray, grayAux, NULL, 15);
-		cvErode(grayAux, grayAux1, NULL, 5);
+		/*cvDilate(gray, grayAux, NULL, 15);
+		cvErode(grayAux, grayAux1, NULL, 5);*/
 
-		vc_gray_to_binary(grayAux1, grayBin, 140);
+		vc_gray_to_binary(gray, grayBin, 65);
+
+		vc_binary_open(grayBin, grayBinAux, 15, 5);
 
 
-		blobs = vc_binary_blob_labellingOpencv(grayBin, BinBlob, &nblobs);
+
+		/*cvDilate(grayBin, grayBinAux, NULL, 15);
+		cvErode(grayBinAux, grayBin, NULL, 5);*/
+
+		blobs = vc_binary_blob_labellingOpencv(grayBinAux, BinBlob, &nblobs);
 
 		vc_binary_blob_info(BinBlob, blobs, nblobs);
 
@@ -122,24 +129,29 @@ int main(void)
 			for (i = 0; i < nblobs; i++)
 			{
 				int raio = (blobs[i].perimeter / (7));
-				if (blobs[i].area < 500 && blobs[i].yc - raio > 100 && blobs[i].yc + raio < frame->height) 
+				if (blobs[i].area > 50 && blobs[i].yc - raio > 100 && blobs[i].yc + raio < frame->height) 
 				{
 					CvPoint center = cvPoint(blobs[i].xc, blobs[i].yc);
+
 					sprintf(str, "Area: %d", blobs[i].area);
 					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 60), &fontbkg, cvScalar(0, 0, 0, 0));
 					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 60), &font, cvScalar(255, 255, 255, 0));
+
 					sprintf(str, "Perimetro: %d", blobs[i].perimeter);
 					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 40), &fontbkg, cvScalar(0, 0, 0, 0));
 					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 40), &font, cvScalar(255, 255, 255, 0));
+
 					sprintf(str, "Calibre: %d", blobs[i].calibre);
 					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 20), &fontbkg, cvScalar(0, 0, 0, 0));
 					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 20), &font, cvScalar(255, 255, 255, 0));
+
 					sprintf(str, "Diametro: %f", blobs[i].diametro);
 					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 0), &fontbkg, cvScalar(0, 0, 0, 0));
 					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 0), &font, cvScalar(255, 255, 255, 0));
-					cvCircle(frame, center, 3, CV_RGB(0, 0, 255), -1, 8, 0);
-					cvCircle(frame, center, raio, CV_RGB(0, 255, 0), 3, 8, 0);
+					//cvCircle(frame, center, 3, CV_RGB(0, 0, 255), -1, 8, 0);
+					//cvCircle(frame, center, raio, CV_RGB(0, 255, 0), 3, 8, 0);
 				}
+				vc_draw_boundingbox(frame, blobs[i]);
 			}
 
 			free(blobs);

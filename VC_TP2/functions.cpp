@@ -865,3 +865,50 @@ int vc_binary_blob_info(IplImage *src, OVC *blobs, int nblobs) {
 
 	return 1;
 }
+
+int vc_draw_boundingbox(IplImage *src, OVC blob)
+{
+	int x, y, pos;
+	int perimetro = 0;
+	int bytesperline = src->widthStep;
+	blob.height = blob.height + blob.y;
+	blob.width = blob.width + blob.x;
+
+	for (y = blob.y; y < blob.height; y++)
+	{
+		x = blob.x - 1;
+		pos = y * bytesperline + x * src->nChannels;
+		src->imageData[pos] = 0;
+		src->imageData[pos + 1] = 255;
+		src->imageData[pos + 2] = 0;
+		perimetro++;
+	}
+	for (y = blob.y; y < blob.height; y++)
+	{
+		x = blob.width;
+		pos = y * bytesperline + x * src->nChannels;
+		src->imageData[pos] = 0;
+		src->imageData[pos + 1] = 255;
+		src->imageData[pos + 2] = 0;
+		perimetro++;
+	}
+	for (x = blob.x; x < blob.width; x++)
+	{
+		y = blob.y - 1;
+		pos = y * bytesperline + x * src->nChannels;
+		src->imageData[pos] = 0;
+		src->imageData[pos + 1] = 255;
+		src->imageData[pos + 2] = 0;
+		perimetro++;
+	}
+	for (x = blob.x; x < blob.width; x++)
+	{
+		y = blob.height;
+		pos = y * bytesperline + x * src->nChannels;
+		src->imageData[pos] = 0;
+		src->imageData[pos + 1] = 255;
+		src->imageData[pos + 2] = 0;
+		perimetro++;
+	}
+	return perimetro;
+}
