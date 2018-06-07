@@ -23,13 +23,18 @@ int main(void)
 
 	// Texto
 	CvFont font, fontbkg;
-	double hScale = 1.0;
-	double vScale = 1.0;
+	double hScale = 0.5;
+	double vScale = 0.5;
 	int lineWidth = 1;
 	char str[500] = { 0 };
+
+	// Outros
+	int ORANGE_MIN[3] = { 5, 50, 50 };
+	int	ORANGE_MAX[3] = { 15, 255, 255 };
 	IplImage *gray = NULL, *grayAux = NULL;
 	IplImage *grayAux1 = NULL, *grayAux2 = NULL;
-	// Outros
+	/* Leitura de vídeo de um ficheiro */
+	capture = cvCaptureFromFile(videofile);
 	int key = 0;
 
 	/* Leitura de v�deo de um ficheiro */
@@ -78,8 +83,9 @@ int main(void)
 		IplImage* frameSobel = cvCreateImage(cvGetSize(frame), 8, 1);*/
 
 		cvCopy(frame, frameAux, NULL); // OR return img_src_cpy;
+		vc_bgr_to_hsv(frameAux);
 
-		vc_rgb_to_hsv_imgimg(frameAux, frame);
+		//vc_rgb_to_hsv_imgimg(frameAux, frame);
 
 		/*vc_rgb_to_hsv_imgimg(frameAux, frameBin);
 		vc_rgb_to_gray(frame, frameGray);
@@ -141,11 +147,9 @@ int main(void)
 		cvPutText(frame, str, cvPoint(20, 100), &fontbkg, cvScalar(0, 0, 0));
 		cvPutText(frame, str, cvPoint(20, 100), &font, cvScalar(255, 255, 255));
 
-		// Fa�a o seu c�digo aqui...
-
 		/* Exibe a frame */
 		//cvShowImage("VC - TP2 - aux", frameAux);
-		cvShowImage("VC - TP2", frame);
+		cvShowImage("VC - TP2", frameAux);
 		//cvShowImage("VC - TP2", frameGray);
 		//cvShowImage("VC - TP2", frameSobel);
 

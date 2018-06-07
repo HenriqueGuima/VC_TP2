@@ -12,6 +12,101 @@
 #include <opencv\highgui.h>
 
 //RGB para HSV
+
+int vc_bgr_to_hsv(IplImage *srcdst) {
+	unsigned char *data = (unsigned char *)srcdst->imageData;
+	int width = srcdst->width;
+	int height = srcdst->height;
+	int bytesperline = srcdst->width * srcdst->nChannels;
+	int channels = srcdst->nChannels;
+	int x, y;
+	long int pos;
+	float div = 1;
+	float max = 0, min = 255;
+	float s = 0.0, h = 0.0, v = 0.0;
+	float r = 0.0, g = 0.0, b = 0.0;
+
+	if ((width <= 0) || (height <= 0) || (srcdst->imageData == NULL)) return 0;
+	if (channels != 3) return 0;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			pos = y * bytesperline + x * channels;
+			b = (float)data[pos];
+			g = (float)data[pos + 1];
+			r = (float)data[pos + 2];
+
+			max = MAX3(r, g, b);
+			min = MIN3(r, g, b);
+
+			v = (max * 100) / (float) 255.0;
+			if (max == 0.0) {
+				s = 0.0;
+				h = 0.0;
+			}
+			else {
+				min = MIN3(r, g, b);
+
+				s = ((max - min) / max)*(float) 100.0;
+
+				if (s == 0.0) {
+					h = 0.0;
+				}
+				if ((max == r) && (g >= b)) {
+					if (!(max == min)) {
+						div = (max - min);
+					}
+					h = 60.0f * (g - b) / div;
+
+				}
+				else if ((max == g) && (b > g)) {
+					if (!(max == min)) {
+						div = (max - min);
+					}
+					h = 360.0f + 60.0f * (g - b) / div;
+				}
+				else if (max == g) {
+					if (!(max == min)) {
+						div = (max - min);
+					}
+					h = 120.0f + 60.0f * (b - r) / div;
+				}
+				else {
+					if (!(max == min)) {
+						div = (max - min);
+					}
+					h = 240.0f + 60.0f * (r - g) / div;
+				}
+
+			}
+
+
+			if ((h >= 0) && (h <= 360) && (s >= 0) && (s <= 32) && (v >= 28 && v <= 100)) {
+
+				// BGR e não RGB
+				data[pos] = 0; // B
+				data[pos + 1] = 0; // G
+				data[pos + 2] = 0; // R
+			}
+			// filtragem das laranjas
+			else if (((h >= 14) && (h <= 35) && (s >= 75) && (s <= 100) && (v >= 0 && v <= 255))
+				&& !((h >= 10) && (h <= 34) && (s >= 63) && (s <= 88) && (v >= 45 && v <= 58))) {
+				// BGR e não RGB
+				data[pos] = 255; // B
+				data[pos + 1] = 255; // G
+				data[pos + 2] = 255; // R
+
+			}
+			else {
+				data[pos] = 0; // B
+				data[pos + 1] = 0; // G
+				data[pos + 2] = 0; // R
+			}
+		}
+	}
+	return 1;
+}
+
 int vc_rgb_to_hsv_imgimg(IplImage *src, IplImage *dst) {
 	unsigned char *datasrc = (unsigned char *)src->imageData;
 	unsigned char *datadst = (unsigned char *)dst->imageData;
