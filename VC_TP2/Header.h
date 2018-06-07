@@ -29,7 +29,7 @@ typedef struct {
 } OVC;
 
 int vc_bgr_to_hsv(IplImage *srcdst);
-int vc_rgb_to_hsv_imgimg(IplImage *src, IplImage *dst);
+int vc_rgb_to_hsv(IplImage *src, IplImage *dst);
 int vc_binary_dilate(IplImage *src, IplImage *dst, int kernel);
 int vc_binary_open(IplImage *src, IplImage *dst, int sizeerode, int sizedilate);
 int vc_gray_gaussian_filter(IplImage *src, IplImage *dst, float n);

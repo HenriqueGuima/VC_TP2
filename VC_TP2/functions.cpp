@@ -107,7 +107,7 @@ int vc_bgr_to_hsv(IplImage *srcdst) {
 	return 1;
 }
 
-int vc_rgb_to_hsv_imgimg(IplImage *src, IplImage *dst) {
+int vc_rgb_to_hsv(IplImage *src, IplImage *dst) {
 	unsigned char *datasrc = (unsigned char *)src->imageData;
 	unsigned char *datadst = (unsigned char *)dst->imageData;
 	int bytesperline_src = src->width * src->nChannels;
@@ -201,7 +201,7 @@ int vc_rgb_to_hsv_imgimg(IplImage *src, IplImage *dst) {
 			//}
 
 			//Procura a cor e torna-a branca 
-			if (hue > 200 && hue < 290 && sat > 0.1 && val > 90)
+			if (hue > 200 && hue < 290 && sat > 0.1 && val > 60)
 			{
 				datadst[pos_dst] = 255;
 				datadst[pos_dst + 1] = 255;

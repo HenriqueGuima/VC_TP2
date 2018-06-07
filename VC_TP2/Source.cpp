@@ -33,6 +33,7 @@ int main(void)
 	int	ORANGE_MAX[3] = { 15, 255, 255 };
 	IplImage *gray = NULL, *grayAux = NULL;
 	IplImage *grayAux1 = NULL, *grayAux2 = NULL;
+	IplImage *grayBin = NULL, *BinBlob = NULL;
 	/* Leitura de vídeo de um ficheiro */
 	capture = cvCaptureFromFile(videofile);
 	int key = 0;
@@ -77,34 +78,43 @@ int main(void)
 
 		
 		IplImage* frameAux = cvCreateImage(cvGetSize(frame), 8, 3); // allocate a 3 channel byte image
-		/*IplImage* frameGray = cvCreateImage(cvGetSize(frame), 8, 1);
-		IplImage* frameBin = cvCreateImage(cvGetSize(frame), 8, 1);
-		IplImage* frameGauss = cvCreateImage(cvGetSize(frame), 8, 1);
-		IplImage* frameSobel = cvCreateImage(cvGetSize(frame), 8, 1);*/
+		/*IplImage* frameBin = cvCreateImage(cvGetSize(frame), 8, 3);
+		IplImage* frameBinAux = cvCreateImage(cvGetSize(frame), 8, 1);*/
 
 		cvCopy(frame, frameAux, NULL); // OR return img_src_cpy;
-		vc_bgr_to_hsv(frameAux);
-
-		//vc_rgb_to_hsv_imgimg(frameAux, frame);
-
-		/*vc_rgb_to_hsv_imgimg(frameAux, frameBin);
-		vc_rgb_to_gray(frame, frameGray);
-		vc_gray_gaussian_filter(frameGray, frameGauss, 5*5);*/
-		//vc_gray_edge_sobel(frameGray, frameAux, 5);
+		
+		/* Exemplo de inser��o texto na frame */
+		sprintf(str, "RESOLUCAO: %dx%d", video.width, video.height);
+		cvPutText(frame, str, cvPoint(20, 25), &fontbkg, cvScalar(0, 0, 0));
+		cvPutText(frame, str, cvPoint(20, 25), &font, cvScalar(255, 255, 255));
+		sprintf(str, "TOTAL DE FRAMES: %d", video.ntotalframes);
+		cvPutText(frame, str, cvPoint(20, 50), &fontbkg, cvScalar(0, 0, 0));
+		cvPutText(frame, str, cvPoint(20, 50), &font, cvScalar(255, 255, 255));
+		sprintf(str, "FRAME RATE: %d", video.fps);
+		cvPutText(frame, str, cvPoint(20, 75), &fontbkg, cvScalar(0, 0, 0));
+		cvPutText(frame, str, cvPoint(20, 75), &font, cvScalar(255, 255, 255));
+		sprintf(str, "N. FRAME: %d", video.nframe);
+		cvPutText(frame, str, cvPoint(20, 100), &fontbkg, cvScalar(0, 0, 0));
+		cvPutText(frame, str, cvPoint(20, 100), &font, cvScalar(255, 255, 255));
 
 		if (gray == NULL) gray = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
 		if (grayAux == NULL) grayAux = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
 		if (grayAux1 == NULL) grayAux1 = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
 		if (grayAux2 == NULL) grayAux2 = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
+		if (grayBin == NULL) grayBin = cvCreateImage(cvGetSize(frameAux), 8, 1);
+		if (BinBlob == NULL) BinBlob = cvCreateImage(cvGetSize(frameAux), 8, 1);
+
+		vc_rgb_to_gray(frameAux, gray);
 
 		cvDilate(gray, grayAux, NULL, 15);
 		cvErode(grayAux, grayAux1, NULL, 5);
 
+		vc_gray_to_binary(grayAux1, grayBin, 140);
 
-		//blobs
-		blobs = vc_binary_blob_labellingOpencv(grayAux1, grayAux2, &nblobs);
 
-		vc_binary_blob_info(grayAux2, blobs, nblobs);
+		blobs = vc_binary_blob_labellingOpencv(grayBin, BinBlob, &nblobs);
+
+		vc_binary_blob_info(BinBlob, blobs, nblobs);
 
 		if (blobs != NULL)
 		{
@@ -112,7 +122,8 @@ int main(void)
 			for (i = 0; i < nblobs; i++)
 			{
 				int raio = (blobs[i].perimeter / (7));
-				if (blobs[i].area > 50000 && blobs[i].yc - raio > 10 && blobs[i].yc + raio < frame->height) {
+				if (blobs[i].area < 500 && blobs[i].yc - raio > 100 && blobs[i].yc + raio < frame->height) 
+				{
 					CvPoint center = cvPoint(blobs[i].xc, blobs[i].yc);
 					sprintf(str, "Area: %d", blobs[i].area);
 					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 60), &fontbkg, cvScalar(0, 0, 0, 0));
@@ -133,25 +144,12 @@ int main(void)
 
 			free(blobs);
 		}
-		/* Exemplo de inser��o texto na frame */
-		sprintf(str, "RESOLUCAO: %dx%d", video.width, video.height);
-		cvPutText(frame, str, cvPoint(20, 25), &fontbkg, cvScalar(0, 0, 0));
-		cvPutText(frame, str, cvPoint(20, 25), &font, cvScalar(255, 255, 255));
-		sprintf(str, "TOTAL DE FRAMES: %d", video.ntotalframes);
-		cvPutText(frame, str, cvPoint(20, 50), &fontbkg, cvScalar(0, 0, 0));
-		cvPutText(frame, str, cvPoint(20, 50), &font, cvScalar(255, 255, 255));
-		sprintf(str, "FRAME RATE: %d", video.fps);
-		cvPutText(frame, str, cvPoint(20, 75), &fontbkg, cvScalar(0, 0, 0));
-		cvPutText(frame, str, cvPoint(20, 75), &font, cvScalar(255, 255, 255));
-		sprintf(str, "N. FRAME: %d", video.nframe);
-		cvPutText(frame, str, cvPoint(20, 100), &fontbkg, cvScalar(0, 0, 0));
-		cvPutText(frame, str, cvPoint(20, 100), &font, cvScalar(255, 255, 255));
+
+		//vc_rgb_to_hsv(frameAux, frameBin);
+		//vc_binary_dilate(frameBin, frameBinAux, 5);
 
 		/* Exibe a frame */
-		//cvShowImage("VC - TP2 - aux", frameAux);
-		cvShowImage("VC - TP2", frameAux);
-		//cvShowImage("VC - TP2", frameGray);
-		//cvShowImage("VC - TP2", frameSobel);
+		cvShowImage("VC - TP2", frame);
 
 		/* Sai da aplica��o, se o utilizador premir a tecla 'q' */
 		key = cvWaitKey(1);
