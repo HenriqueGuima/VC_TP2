@@ -10,6 +10,8 @@ int main(void)
 	//char videofile[50] = "video.avi";
 	CvCapture *capture;
 	IplImage *frame;
+	OVC *blobs;
+	int i, nblobs;
 
 	struct
 	{
@@ -25,6 +27,8 @@ int main(void)
 	double vScale = 1.0;
 	int lineWidth = 1;
 	char str[500] = { 0 };
+	IplImage *gray = NULL, *grayAux = NULL;
+	IplImage *grayAux1 = NULL, *grayAux2 = NULL;
 	// Outros
 	int key = 0;
 
@@ -82,8 +86,47 @@ int main(void)
 		vc_gray_gaussian_filter(frameGray, frameGauss, 5*5);*/
 		//vc_gray_edge_sobel(frameGray, frameAux, 5);
 
-		//Blobs
+		if (gray == NULL) gray = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
+		if (grayAux == NULL) grayAux = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
+		if (grayAux1 == NULL) grayAux1 = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
+		if (grayAux2 == NULL) grayAux2 = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
 
+		cvDilate(gray, grayAux, NULL, 15);
+		cvErode(grayAux, grayAux1, NULL, 5);
+
+
+		//blobs
+		blobs = vc_binary_blob_labellingOpencv(grayAux1, grayAux2, &nblobs);
+
+		vc_binary_blob_info(grayAux2, blobs, nblobs);
+
+		if (blobs != NULL)
+		{
+			//printf("\nNumber of labels: %d\n", nblobs);
+			for (i = 0; i < nblobs; i++)
+			{
+				int raio = (blobs[i].perimeter / (7));
+				if (blobs[i].area > 50000 && blobs[i].yc - raio > 10 && blobs[i].yc + raio < frame->height) {
+					CvPoint center = cvPoint(blobs[i].xc, blobs[i].yc);
+					sprintf(str, "Area: %d", blobs[i].area);
+					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 60), &fontbkg, cvScalar(0, 0, 0, 0));
+					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 60), &font, cvScalar(255, 255, 255, 0));
+					sprintf(str, "Perimetro: %d", blobs[i].perimeter);
+					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 40), &fontbkg, cvScalar(0, 0, 0, 0));
+					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 40), &font, cvScalar(255, 255, 255, 0));
+					sprintf(str, "Calibre: %d", blobs[i].calibre);
+					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 20), &fontbkg, cvScalar(0, 0, 0, 0));
+					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 20), &font, cvScalar(255, 255, 255, 0));
+					sprintf(str, "Diametro: %f", blobs[i].diametro);
+					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 0), &fontbkg, cvScalar(0, 0, 0, 0));
+					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 0), &font, cvScalar(255, 255, 255, 0));
+					cvCircle(frame, center, 3, CV_RGB(0, 0, 255), -1, 8, 0);
+					cvCircle(frame, center, raio, CV_RGB(0, 255, 0), 3, 8, 0);
+				}
+			}
+
+			free(blobs);
+		}
 		/* Exemplo de inser��o texto na frame */
 		sprintf(str, "RESOLUCAO: %dx%d", video.width, video.height);
 		cvPutText(frame, str, cvPoint(20, 25), &fontbkg, cvScalar(0, 0, 0));
@@ -102,7 +145,7 @@ int main(void)
 
 		/* Exibe a frame */
 		//cvShowImage("VC - TP2 - aux", frameAux);
-		cvShowImage("VC - TP2", frameGauss);
+		cvShowImage("VC - TP2", frame);
 		//cvShowImage("VC - TP2", frameGray);
 		//cvShowImage("VC - TP2", frameSobel);
 

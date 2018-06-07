@@ -475,3 +475,298 @@ int vc_gray_edge_sobel(IplImage *src, IplImage *dst, float th) // th = [0.001, 1
 
 	return 1;
 }
+
+OVC* vc_binary_blob_labellingOpencv(IplImage *src, IplImage *dst, int *nlabels) {
+	unsigned char *datasrc = (unsigned char *)src->imageData;
+	unsigned char *datadst = (unsigned char *)dst->imageData;
+	int width = src->width;
+	int height = src->height;
+	int bytesperline = src->widthStep;
+	int channels = src->nChannels;
+	int x, y, a, b;
+	long int i, size;
+	long int posX, posA, posB, posC, posD;
+	int labeltable[256] = { 0 };
+	int labelarea[256] = { 0 };
+	int label = 1; // Etiqueta inicial.
+	int num;
+	OVC *blobs; // Apontador para lista de blobs (objectos) que ser retornada desta funo.
+
+				// Verificao de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->imageData == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height) || (src->nChannels != dst->nChannels)) return NULL;
+	if (channels != 1) return NULL;
+
+	// Copia dados da imagem binria para imagem grayscale
+	memcpy(datadst, datasrc, bytesperline * height);
+
+	// Todos os pixis de plano de fundo devem obrigatriamente ter valor 0
+	// Todos os pixis de primeiro plano devem obrigatriamente ter valor 255
+	// Sero atribudas etiquetas no intervalo [1,254]
+	// Este algoritmo est assim limitado a 254 labels
+	for (i = 0, size = bytesperline * height; i < size; i++) {
+		if (datadst[i] != 0) datadst[i] = 255;
+	}
+
+	// Limpa os rebordos da imagem binria
+	for (y = 0; y < height; y++) {
+		datadst[y * bytesperline + 0 * channels] = 0;
+		datadst[y * bytesperline + (width - 1) * channels] = 0;
+	}
+	for (x = 0; x < width; x++) {
+		datadst[0 * bytesperline + x * channels] = 0;
+		datadst[(height - 1) * bytesperline + x * channels] = 0;
+	}
+
+	// Efectua a etiquetagem
+	for (y = 1; y < height - 1; y++) {
+		for (x = 1; x < width - 1; x++) {
+			// Kernel:
+			// A B C
+			// D X
+
+			posA = (y - 1) * bytesperline + (x - 1) * channels; // A
+			posB = (y - 1) * bytesperline + x * channels; // B
+			posC = (y - 1) * bytesperline + (x + 1) * channels; // C
+			posD = y * bytesperline + (x - 1) * channels; // D
+			posX = y * bytesperline + x * channels; // X
+
+													// Se o pixel foi marcado
+			if (datadst[posX] != 0) {
+				if ((datadst[posA] == 0) && (datadst[posB] == 0) && (datadst[posC] == 0) && (datadst[posD] == 0)) {
+					datadst[posX] = label;
+					labeltable[label] = label;
+					label++;
+				}
+				else {
+					num = 255;
+
+					// Se A est marcado, j tem etiqueta (j no  255), e  menor que a etiqueta "num"
+					if ((datadst[posA] != 0) && (datadst[posA] != 255) && (datadst[posA] < num)) {
+						num = datadst[posA];
+					}
+					// Se B est marcado, j tem etiqueta (j no  255), e  menor que a etiqueta "num"
+					if ((datadst[posB] != 0) && (datadst[posB] != 255) && (datadst[posB] < num)) {
+						num = datadst[posB];
+					}
+					// Se C est marcado, j tem etiqueta (j no 255), e  menor que a etiqueta "num"
+					if ((datadst[posC] != 0) && (datadst[posC] != 255) && (datadst[posC] < num)) {
+						num = datadst[posC];
+					}
+					// Se D est marcado, j tem etiqueta (j no  255), e  menor que a etiqueta "num"
+					if ((datadst[posD] != 0) && (datadst[posD] != 255) && (datadst[posD] < num)) {
+						num = datadst[posD];
+					}
+
+					// Actualiza a tabela de etiquetas
+					if ((datadst[posA] != 0) && (datadst[posA] != 255)) {
+						if (labeltable[datadst[posA]] != labeltable[num]) {
+							for (a = 1; a < label; a++) {
+								if (labeltable[a] == labeltable[datadst[posA]]) {
+									labeltable[a] = labeltable[num];
+								}
+							}
+						}
+					}
+					if ((datadst[posB] != 0) && (datadst[posB] != 255)) {
+						if (labeltable[datadst[posB]] != labeltable[num]) {
+							for (a = 1; a < label; a++) {
+								if (labeltable[a] == labeltable[datadst[posB]]) {
+									labeltable[a] = labeltable[num];
+								}
+							}
+						}
+					}
+					if ((datadst[posC] != 0) && (datadst[posC] != 255)) {
+						if (labeltable[datadst[posC]] != labeltable[num]) {
+							for (a = 1; a < label; a++) {
+								if (labeltable[a] == labeltable[datadst[posC]]) {
+									labeltable[a] = labeltable[num];
+								}
+							}
+						}
+					}
+					if ((datadst[posD] != 0) && (datadst[posD] != 255)) {
+						if (labeltable[datadst[posD]] != labeltable[num]) {
+							for (a = 1; a < label; a++) {
+								if (labeltable[a] == labeltable[datadst[posD]]) {
+									labeltable[a] = labeltable[num];
+								}
+							}
+						}
+					}
+					labeltable[datadst[posX]] = num;
+
+					// Atribui a etiqueta ao pixel
+					datadst[posX] = num;
+				}
+			}
+		}
+	}
+
+	// Volta a etiquetar a imagem
+	for (y = 1; y < height - 1; y++) {
+		for (x = 1; x < width - 1; x++) {
+			posX = y * bytesperline + x * channels; // X
+
+			if (datadst[posX] != 0) {
+				datadst[posX] = labeltable[datadst[posX]];
+			}
+		}
+	}
+
+	// Contagem do nmero de blobs
+	// Passo 1: Eliminar, da tabela, etiquetas repetidas
+	for (a = 1; a < label - 1; a++) {
+		for (b = a + 1; b < label; b++) {
+			if (labeltable[a] == labeltable[b]) labeltable[b] = 0;
+		}
+	}
+	// Passo 2: Conta etiquetas e organiza a tabela de etiquetas, para que no hajam valores vazios (zero) entre etiquetas
+	*nlabels = 0;
+	for (a = 1; a < label; a++) {
+		if (labeltable[a] != 0) {
+			labeltable[*nlabels] = labeltable[a]; // Organiza tabela de etiquetas
+			(*nlabels)++; // Conta etiquetas
+		}
+	}
+
+	// Se no h blobs
+	if (*nlabels == 0) return NULL;
+
+	// Cria lista de blobs (objectos) e preenche a etiqueta
+	blobs = (OVC *)calloc((*nlabels), sizeof(OVC));
+	if (blobs != NULL) {
+		for (a = 0; a < (*nlabels); a++) blobs[a].label = labeltable[a];
+	}
+	else return NULL;
+
+	return blobs;
+}
+
+int vc_binary_blob_info(IplImage *src, OVC *blobs, int nblobs) {
+	unsigned char *data = (unsigned char *)src->imageData;
+	int width = src->width;
+	int height = src->height;
+	int bytesperline = src->widthStep;
+	int channels = src->nChannels;
+	int x, y, i;
+	long int pos;
+	int xmin, ymin, xmax, ymax;
+	long int sumx, sumy;
+
+	// Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->imageData == NULL)) return 0;
+	if (channels != 1) return 0;
+
+	// Conta área de cada blob
+	for (i = 0; i < nblobs; i++) {
+		xmin = width - 1;
+		ymin = height - 1;
+		xmax = 0;
+		ymax = 0;
+
+		sumx = 0;
+		sumy = 0;
+
+		if (blobs[i].label != 0)
+			blobs[i].area = 0;
+
+		for (y = 1; y < height - 1; y++) {
+			for (x = 1; x < width - 1; x++) {
+				pos = y * bytesperline + x * channels;
+
+				if (data[pos] == blobs[i].label) {
+					// Área
+					blobs[i].area++;
+
+					// Centro de Gravidade
+					sumx += x;
+					sumy += y;
+
+					// Bounding Box
+					if (xmin > x) xmin = x;
+					if (ymin > y) ymin = y;
+					if (xmax < x) xmax = x;
+					if (ymax < y) ymax = y;
+
+					// Perímetro
+					// Se pelo menos um dos quatro vizinhos não pertence ao mesmo label, então é um pixel de contorno
+					if ((data[pos - 1] != blobs[i].label) || (data[pos + 1] != blobs[i].label) || (data[pos - bytesperline] != blobs[i].label) || (data[pos + bytesperline] != blobs[i].label)) {
+						blobs[i].perimeter++;
+					}
+				}
+			}
+		}
+
+		// Bounding Box
+		blobs[i].x = xmin;
+		blobs[i].y = ymin;
+		blobs[i].width = (xmax - xmin) + 1;
+		blobs[i].height = (ymax - ymin) + 1;
+
+		// Centro de Gravidade
+		//blobs[i].xc = (xmax - xmin) / 2;
+		//blobs[i].yc = (ymax - ymin) / 2;
+		blobs[i].xc = sumx / MAX(blobs[i].area, 1);
+		blobs[i].yc = sumy / MAX(blobs[i].area, 1);
+
+
+		// Calulamos o diametro através da regra de tres simples
+		// alutra mais largura / média ()
+		blobs[i].diametro = ((blobs[i].width + blobs[i].height) / 2) * 55 / 280;
+
+		// não usar sff
+		//blobs[i].diametro = (blobs[i].perimeter / PI) * 55 / 280;
+
+		// condições de atribuição de calibre às laranjas
+		// como ha valores que se sobrepoem, as laranjas são sempre calibradas por baixo
+		// se ja uma laranja de calibre 8 que caia nos valores de 7 passa a ser 7
+		if (blobs[i].diametro >= 100 && blobs[i].diametro <= 900)
+		{
+			blobs[i].calibre = 0;
+		}
+		else if (blobs[i].diametro >= 87 && blobs[i].diametro < 100) {
+			blobs[i].calibre = 1;
+		}
+		else if (blobs[i].diametro >= 84 && blobs[i].diametro < 96) {
+			blobs[i].calibre = 2;
+		}
+		else if (blobs[i].diametro >= 81 && blobs[i].diametro < 92) {
+			blobs[i].calibre = 3;
+		}
+		else if (blobs[i].diametro >= 77 && blobs[i].diametro < 88) {
+			blobs[i].calibre = 4;
+		}
+		else if (blobs[i].diametro >= 73 && blobs[i].diametro < 84) {
+			blobs[i].calibre = 5;
+		}
+		else if (blobs[i].diametro >= 70 && blobs[i].diametro < 80) {
+			blobs[i].calibre = 6;
+		}
+		else if (blobs[i].diametro >= 67 && blobs[i].diametro < 76) {
+			blobs[i].calibre = 7;
+		}
+		else if (blobs[i].diametro >= 64 && blobs[i].diametro < 73) {
+			blobs[i].calibre = 8;
+		}
+		else if (blobs[i].diametro >= 62 && blobs[i].diametro < 70) {
+			blobs[i].calibre = 9;
+		}
+		else if (blobs[i].diametro >= 60 && blobs[i].diametro < 68) {
+			blobs[i].calibre = 10;
+		}
+		else if (blobs[i].diametro >= 58 && blobs[i].diametro < 66) {
+			blobs[i].calibre = 11;
+		}
+		else if (blobs[i].diametro >= 56 && blobs[i].diametro < 63) {
+			blobs[i].calibre = 12;
+		}
+		else if (blobs[i].diametro >= 53 && blobs[i].diametro < 60) {
+			blobs[i].calibre = 13;
+		}
+
+	}
+
+	return 1;
+}

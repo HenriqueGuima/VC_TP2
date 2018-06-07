@@ -35,3 +35,5 @@ int vc_gray_gaussian_filter(IplImage *src, IplImage *dst, float n);
 int vc_gray_to_binary(IplImage *src, IplImage *dst, int threshold);;
 int vc_rgb_to_gray(IplImage *src, IplImage *dst);
 int vc_gray_edge_sobel(IplImage *src, IplImage *dst, float th);
+int vc_binary_blob_info(IplImage *src, OVC *blobs, int nblobs);
+OVC* vc_binary_blob_labellingOpencv(IplImage *src, IplImage *dst, int *nlabels);
