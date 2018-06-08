@@ -106,6 +106,151 @@ int vc_bgr_to_hsv(IplImage *srcdst) {
 	}
 	return 1;
 }
+// Determinar valor máximo de RGB/BGR
+int vc_rgb_bgr_max(unsigned char red, unsigned char green, unsigned char blue)
+{
+
+	// Caso não funcionar nas devidas condições, remover casts de ints
+
+	// Se Red for maior que Green e Blue
+	if ((red >= green) && (red >= blue))
+		return (int)red;
+
+	// Se Green for maior que Red e Blue
+	else if ((green >= red) && (green >= blue))
+		return (int)green;
+
+	// Se Blue for maior que Red e Green
+	else if ((blue >= red) && (blue >= green))
+		return (int)blue;
+
+	// Erro
+	else
+		return -1;
+
+}
+
+
+// Determinar valor mínimo de RGB/BGR
+int vc_rgb_bgr_min(unsigned char red, unsigned char green, unsigned char blue)
+{
+
+	// Caso não funcionar nas devidas condições, remover casts de ints
+
+	// Se Red for menor que Green e Blue
+	if ((red <= green) && (red <= blue))
+		return (int)red;
+
+	// Se Green for menor que Red e Blue
+	else if ((green <= red) && (green <= blue))
+		return (int)green;
+
+	// Se Blue for menor que Red e Green
+	else if ((blue <= red) && (blue <= green))
+		return (int)blue;
+
+	// Erro
+	else
+		return -1;
+
+}
+
+// Conversão de imagem RGB para HSV
+int vc_rgb_to_hsv(IplImage *srcdst)
+{
+	// Value - Mais ou menos luz
+	// Saturation - Mais ou menos cor
+	// Tonalidade ou Matiz (Hue)
+
+
+	// Declaração de variáveis locais
+	int position = 0;
+	int colorMin, colorMax;
+	int i, j;
+	float red, green, blue;
+	int bytesperline = srcdst->width * srcdst->nChannels;
+
+
+	// Validar imagem
+	if ((srcdst->width <= 0) || (srcdst->height <= 0) || (srcdst->imageData == NULL))
+		return 0;
+	if (srcdst->nChannels != 3)
+		return 0;
+
+
+	// Percorre a largura da imagem
+	for (i = 0; i < srcdst->width; i++)
+	{
+		// Percorre a altura da imagem
+		for (j = 0; j < srcdst->height; j++)
+		{
+
+			// Calcular a posição da imagemOriginal
+			position = (j * bytesperline) + (i * srcdst->nChannels);
+
+
+			// Calcular o nível mínimo e o nível máximo da imagem
+			colorMin = vc_rgb_bgr_min(srcdst->imageData[position], srcdst->imageData[position + 1], srcdst->imageData[position + 2]);
+			colorMax = vc_rgb_bgr_max(srcdst->imageData[position], srcdst->imageData[position + 1], srcdst->imageData[position + 2]);
+
+
+			// Guardar os valores das cores para mais tarde comparar
+			red = (float)srcdst->imageData[position];
+			green = (float)srcdst->imageData[position + 1];
+			blue = (float)srcdst->imageData[position + 2];
+
+
+			// Calcular o value (assumir que o value é o blue)
+			srcdst->imageData[position + 2] = (unsigned char)colorMax;
+
+
+			// Calcular a saturation (impedindo a divisão por 0)
+			if (srcdst->imageData[position + 2] == 0)
+			{
+				srcdst->imageData[position + 1] = 0;
+				srcdst->imageData[position] = 0;
+			}
+
+
+			// Se for possível dividir
+			else
+			{
+				// Calcular a saturação (imagem->data[posicao + 2] == maximo)
+				srcdst->imageData[position + 1] = (unsigned char)((float)(srcdst->imageData[position + 2] - colorMin) / (float)srcdst->imageData[position + 2] * 255.0f);
+
+
+				// Se saturation for 0, o hue passa tambem a zero
+				if (srcdst->imageData[position + 1] == 0)
+					srcdst->imageData[position] = 0;
+
+
+				// Se for possível a divisão, aplicar fórmulas de conversão (ver sebenta)
+				else
+				{
+					// Primeira definição do hue, ver sebentas com as fórmulas
+					if ((colorMax == red) && (green >= blue))
+						srcdst->imageData[position] = (unsigned char)(((60.0f * (green - blue) / (colorMax - colorMin)) / 360.0f)* 255.0f);
+
+					else if ((colorMax == red) && (blue > green))
+						srcdst->imageData[position] = (unsigned char)((((360.0f + 60.0f * (green - blue) / (colorMax - colorMin)) / 360.0f)* 255.0f));
+
+					else if (colorMax == green)
+						srcdst->imageData[position] = (unsigned char)((((120.0f + 60.0f * (blue - red) / (colorMax - colorMin)) / 360.0f)* 255.0f));
+
+					else if (colorMax == blue)
+						srcdst->imageData[position] = (unsigned char)((((240.0f + 60.0f * (red - green) / (colorMax - colorMin)) / 360.0f)* 255.0f));
+
+
+					// Se for escala de cinzas
+					else if (colorMax == colorMin)
+						srcdst->imageData[position] = (unsigned char)0;
+
+				}
+			}
+
+		}
+	}
+}
 
 int vc_rgb_to_hsv(IplImage *src, IplImage *dst) {
 	unsigned char *datasrc = (unsigned char *)src->imageData;
@@ -189,30 +334,30 @@ int vc_rgb_to_hsv(IplImage *src, IplImage *dst) {
 
 			datadst[pos_dst + 2 ] = datadst[pos_dst + 2 ] * 0.5;
 
-			//if (datadst[pos_dst+2] > 190 && datadst[pos_dst+2] < 300 && sat > 1 && sat < 20)
-			//{
-			//	datadst[pos_dst + 2] = 255;
-			//}
-			//else
-			//{
-			//	/*datadst[pos_dst] = 255;
-			//	datadst[pos_dst + 1] = 255;
-			//	datadst[pos_dst + 2] = 255;*/
-			//}
-
-			//Procura a cor e torna-a branca 
-			if (hue > 200 && hue < 290 && sat > 0.1 && val > 60)
+			if (datadst[pos_dst+2] > 190 && datadst[pos_dst+2] < 300 && sat > 1 && sat < 20)
 			{
-				datadst[pos_dst] = 255;
-				datadst[pos_dst + 1] = 255;
 				datadst[pos_dst + 2] = 255;
 			}
-			else //O resto fica a preto
+			else
 			{
-				datadst[pos_dst] = 0;
-				datadst[pos_dst + 1] = 0;
-				datadst[pos_dst + 2] = 0;
+				/*datadst[pos_dst] = 255;
+				datadst[pos_dst + 1] = 255;
+				datadst[pos_dst + 2] = 255;*/
 			}
+
+			//Procura a cor e torna-a branca 
+			//if (hue > 200 && hue < 290 && sat > 0.1 && val > 60)
+			//{
+			//	datadst[pos_dst] = 255;
+			//	datadst[pos_dst + 1] = 255;
+			//	datadst[pos_dst + 2] = 255;
+			//}
+			//else //O resto fica a preto
+			//{
+			//	datadst[pos_dst] = 0;
+			//	datadst[pos_dst + 1] = 0;
+			//	datadst[pos_dst + 2] = 0;
+			//}
 		}
 	}
 	return 1;
@@ -911,4 +1056,136 @@ int vc_draw_boundingbox(IplImage *src, OVC blob)
 		perimetro++;
 	}
 	return perimetro;
+}
+
+
+int vc_bgr_to_rgb(IplImage *src, IplImage *dst) {
+
+	// Declaração de variaveis locais
+	int position = 0;
+	int i, j;
+	int bytesperline_src = src->width * src->nChannels;
+	int bytesperline_dst = dst->width * dst->nChannels;
+
+
+	// Validar imagem original
+	if ((src->width <= 0) || (src->height <= 0) || (src->imageData == NULL))
+		return 0;
+	if (src->nChannels != 3)
+		return 0;
+
+
+	// Validar imagem destino
+	if ((dst->width <= 0) || (dst->height <= 0) || (dst->imageData == NULL))
+		return 0;
+	if (dst->nChannels != 3)
+		return 0;
+
+
+	// Percorrer lagura da imagem destino
+	for (i = 0; i < dst->width; i++)
+	{
+
+		// Percorrer altura da imagem destino
+		for (j = 0; j < dst->height; j++)
+		{
+
+			// Calcular posição
+			position = (j * bytesperline_dst) + (i * dst->nChannels);
+
+			// Preencher canais da imagem destino na posição da iteração actual, tendo por base a imagem original
+			dst->imageData[position] = src->imageData[position + 2]; //rb
+			dst->imageData[position + 1] = src->imageData[position + 1]; //gg
+			dst->imageData[position + 2] = src->imageData[position]; //br
+
+		}
+
+	}
+
+
+	// Devolver que operação foi concluída com sucesso
+	return 1;
+
+}
+
+// Aplica threshold binário a imagem HSV
+// Se rangeCor == 0, aplica o threshold para vermelho
+// Se rangeCor == 1, aplica o threshold para azul
+// Se rangeCor == 2, aplica o threshold para blob colorido (com um minímo de saturação)
+int vc_hsv_to_binary_in_range(IplImage *src, IplImage *dst, unsigned short Cor)
+{
+
+	// Declaração de variáveis locais
+	int posicao = 0, posicaoDestino = 0;
+	int i, j;
+	int bytesperline_src = src->width * src->nChannels;
+	int bytesperline_dst = dst->width * dst->nChannels;
+
+
+	// Validar imagem de origem
+	if ((src->width <= 0) || (src->height <= 0) || (src->imageData == NULL))
+		return 0;
+	if (dst->nChannels != 3)
+		return 0;
+
+
+	// Validar imagem de destino
+	if ((dst->width <= 0) || (dst->height <= 0) || (dst->imageData == NULL))
+		return 0;
+	if (dst->nChannels != 1)
+		return 0;
+
+
+	// Percorre largura da imagem
+	for (i = 0; i < src->width; i++)
+	{
+		// Percorre altura da imagem
+		for (j = 0; j < src->height; j++)
+		{
+
+			// Calcular posição da imagem
+			posicao = (j * bytesperline_src) + (i * src->nChannels);
+			posicaoDestino = (j * bytesperline_dst) + (i * dst->nChannels);
+
+
+			// Identificar blob vermelho
+			if (Cor == 0)
+			{
+				if ((src->imageData[posicao + 1] < 0) || (src->imageData[posicao + 2] < 0) || (src->imageData[posicao] > 60 && src->imageData[posicao] < 230))
+					dst->imageData[posicaoDestino] = 255;
+
+				else
+					dst->imageData[posicaoDestino] = 0;
+			}
+
+			// Identificar blob azul
+			if (Cor == 1)
+			{
+				if ((src->imageData[posicao + 1] < 40) || (src->imageData[posicao + 2] < 35) || (src->imageData[posicao] < 150 || src->imageData[posicao] > 200))
+					dst->imageData[posicaoDestino] = 0;
+
+				else
+					dst->imageData[posicaoDestino] = 255;
+			}
+
+			// Identificar blob colorido (com mínimo de saturação)
+			if (Cor == 2)
+			{
+
+				if (src->imageData[posicao + 1] < 60)
+					dst->imageData[posicaoDestino] = 0;
+
+				else
+					dst->imageData[posicaoDestino] = 255;
+
+			}
+
+		}
+	}
+
+
+
+	// Devolver que operação foi concluída com sucesso
+	return 1;
+
 }

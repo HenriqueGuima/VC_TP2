@@ -33,7 +33,7 @@ int main(void)
 	int	ORANGE_MAX[3] = { 15, 255, 255 };
 	IplImage *gray = NULL, *grayAux = NULL;
 	IplImage *grayAux1 = NULL, *grayAux2 = NULL;
-	IplImage *grayBin = NULL, *BinBlob = NULL, *grayBinAux = NULL;
+	IplImage *grayBin = NULL, *BinBlob = NULL, *grayBinAux = NULL, *frameHSV = NULL, *bin = NULL;
 	/* Leitura de vídeo de um ficheiro */
 	capture = cvCaptureFromFile(videofile);
 	int key = 0;
@@ -78,6 +78,7 @@ int main(void)
 
 		
 		IplImage* frameAux = cvCreateImage(cvGetSize(frame), 8, 3); // allocate a 3 channel byte image
+		
 		/*IplImage* frameBin = cvCreateImage(cvGetSize(frame), 8, 3);
 		IplImage* frameBinAux = cvCreateImage(cvGetSize(frame), 8, 1);*/
 
@@ -97,6 +98,9 @@ int main(void)
 		cvPutText(frame, str, cvPoint(20, 100), &fontbkg, cvScalar(0, 0, 0));
 		cvPutText(frame, str, cvPoint(20, 100), &font, cvScalar(255, 255, 255));
 
+		if (frameHSV == NULL) frameHSV = cvCreateImage(cvGetSize(frameAux), 8, 3);
+		//if (bin == NULL) bin = cvCreateImage(cvGetSize(frameHSV), 8, 1);
+
 		if (gray == NULL) gray = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
 		if (grayAux == NULL) grayAux = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
 		if (grayAux1 == NULL) grayAux1 = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
@@ -105,14 +109,21 @@ int main(void)
 		if (grayBinAux == NULL) grayBinAux = cvCreateImage(cvGetSize(frameAux), 8, 1);
 		if (BinBlob == NULL) BinBlob = cvCreateImage(cvGetSize(frameAux), 8, 1);
 
-		vc_rgb_to_gray(frameAux, gray);
+		
 
-		/*cvDilate(gray, grayAux, NULL, 15);
-		cvErode(grayAux, grayAux1, NULL, 5);*/
+		vc_bgr_to_rgb(frame, frameAux);
+		//vc_rgb_to_hsv(frameAux, frameHSV);
+		vc_rgb_to_hsv(frameAux);
 
-		vc_gray_to_binary(gray, grayBin, 65);
+		vc_hsv_to_binary_in_range(frameAux, bin , 2);
 
-		vc_binary_open(grayBin, grayBinAux, 15, 5);
+		//vc_rgb_to_gray(frameAux, gray);
+		///*cvDilate(gray, grayAux, NULL, 15);
+		//cvErode(grayAux, grayAux1, NULL, 5);*/
+
+		//vc_gray_to_binary(gray, grayBin, 65);
+
+		//vc_binary_open(grayBin, grayBinAux, 15, 5);
 
 
 
@@ -161,7 +172,7 @@ int main(void)
 		//vc_binary_dilate(frameBin, frameBinAux, 5);
 
 		/* Exibe a frame */
-		cvShowImage("VC - TP2", frame);
+		cvShowImage("VC - TP2", bin);
 
 		/* Sai da aplica��o, se o utilizador premir a tecla 'q' */
 		key = cvWaitKey(1);
