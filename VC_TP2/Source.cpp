@@ -10,6 +10,11 @@ int main(void)
 	//char videofile[50] = "video.avi";
 	CvCapture *capture;
 	IplImage *frame;
+	IplImage *gray = NULL, *grayAux = NULL;
+	IplImage *grayAux1 = NULL, *grayAux2 = NULL;
+	IplImage *grayBin = NULL, *BinBlob = NULL, *grayBinAux = NULL, *bin = NULL;
+	IplImage *frameHSVmp = NULL, *frameHSVmd = NULL, *frameHSVme = NULL, *frameHSVmeNeg = NULL;
+	IplImage *dilate1 = NULL;
 	OVC *blobsMP, *blobsMD, *blobsME;
 	int i, nblobs;
 
@@ -31,10 +36,7 @@ int main(void)
 	// Outros
 	int ORANGE_MIN[3] = { 5, 50, 50 };
 	int	ORANGE_MAX[3] = { 15, 255, 255 };
-	IplImage *gray = NULL, *grayAux = NULL;
-	IplImage *grayAux1 = NULL, *grayAux2 = NULL;
-	IplImage *grayBin = NULL, *BinBlob = NULL, *grayBinAux = NULL, *bin = NULL;
-	IplImage *frameHSVmp = NULL, *frameHSVmd = NULL, *frameHSVme = NULL, *frameHSVmeNeg = NULL;
+	
 	/* Leitura de vídeo de um ficheiro */
 	capture = cvCaptureFromFile(videofile);
 	int key = 0;
@@ -100,18 +102,11 @@ int main(void)
 		cvPutText(frame, str, cvPoint(20, 100), &font, cvScalar(255, 255, 255));
 
 		if (frameHSVmp == NULL) frameHSVmp = cvCreateImage(cvGetSize(frameAux), 8, 1);
+		if (dilate1 == NULL) dilate1 = cvCreateImage(cvGetSize(frameAux), 8, 1);
 		if (frameHSVmd == NULL) frameHSVmd = cvCreateImage(cvGetSize(frameAux), 8, 1);
 		if (frameHSVme == NULL) frameHSVme = cvCreateImage(cvGetSize(frameAux), 8, 1);
 		if (frameHSVmeNeg == NULL) frameHSVmeNeg = cvCreateImage(cvGetSize(frameAux), 8, 1);
-		//if (bin == NULL) bin = cvCreateImage(cvGetSize(frameHSV), 8, 1);
-
-		if (gray == NULL) gray = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
-		if (grayAux == NULL) grayAux = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
-		if (grayAux1 == NULL) grayAux1 = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
-		if (grayAux2 == NULL) grayAux2 = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
-		if (grayBin == NULL) grayBin = cvCreateImage(cvGetSize(frameAux), 8, 1);
-		if (grayBinAux == NULL) grayBinAux = cvCreateImage(cvGetSize(frameAux), 8, 1);
-		if (BinBlob == NULL) BinBlob = cvCreateImage(cvGetSize(frameAux), 8, 1);
+		
 
 		
 
@@ -119,6 +114,8 @@ int main(void)
 
 		//Procura por moedas de valor mais baixo (1 - 5 cent) AKA moedas pretas
 		vc_rgb_to_hsv_mp(frameAux, frameHSVmp);
+		cvDilate(frameHSVmp, dilate1, NULL, 10);
+		cvErode(dilate1, frameHSVmp, NULL, 10);
 
 		//Procura por moedas douradas (10 - 50 cent)
 		vc_rgb_to_hsv_md(frameAux, frameHSVmd);
@@ -138,23 +135,35 @@ int main(void)
 
 		//Identificar blobs de cada tipo de moeda
 		//Moedas pretas
-		//blobsMP = vc_binary_blob_labellingOpencv(frameHSVmp, BinBlob, &nblobs);
+		blobsMP = vc_binary_blob_labellingOpencv(frameHSVmp, BinBlob, &nblobs);
 
-		//vc_binary_blob_info(BinBlob, blobsMP, nblobs);
+		vc_binary_blob_info(BinBlob, blobsMP, nblobs);
 
-		//if (blobsMP != NULL)
-		//{
-		//	//printf("\nNumber of labels: %d\n", nblobs);
-		//	for (i = 0; i < nblobs; i++)
-		//	{
-		//		
-		//	}
+		if (blobsMP != NULL)
+		{
+			//printf("\nNumber of labels: %d\n", nblobs);
+			for (i = 0; i < nblobs; i++)
+			{
+				if (blobsMP[i].area < 100)
+				{
+					//Percorre para fora dos limites da área em questão e elimina as blobs pequenas dos dados brancos
+					for (int y = blobsMP[i].y; y < blobsMP[i].y + blobsMP[i].height; y++)
+					{
+						for (int x = blobsMP[i].x; x < blobsMP[i].x + blobsMP[i].width; x++)
+						{
+							//Muda as cores das blobs pequenas para preto, eliminando-as
+							long int pos = y * frameHSVmp->nChannels + x * frameHSVmp->nChannels;
+							frameHSVmp->imageData[pos] = 0;
+						}
+					}
+				}
+			}
 
-		//	free(blobsMP);
-		//}
+			free(blobsMP);
+		}
 
 		/* Exibe a frame */
-		cvShowImage("VC - TP2", frameHSVmp);
+		cvShowImage("VC - TP2", frame);
 
 		/* Sai da aplica��o, se o utilizador premir a tecla 'q' */
 		key = cvWaitKey(1);
