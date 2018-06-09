@@ -10,7 +10,7 @@ int main(void)
 	//char videofile[50] = "video.avi";
 	CvCapture *capture;
 	IplImage *frame;
-	OVC *blobs;
+	OVC *blobsMP, *blobsMD, *blobsME;
 	int i, nblobs;
 
 	struct
@@ -33,7 +33,8 @@ int main(void)
 	int	ORANGE_MAX[3] = { 15, 255, 255 };
 	IplImage *gray = NULL, *grayAux = NULL;
 	IplImage *grayAux1 = NULL, *grayAux2 = NULL;
-	IplImage *grayBin = NULL, *BinBlob = NULL, *grayBinAux = NULL, *frameHSV = NULL, *bin = NULL;
+	IplImage *grayBin = NULL, *BinBlob = NULL, *grayBinAux = NULL, *bin = NULL;
+	IplImage *frameHSVmp = NULL, *frameHSVmd = NULL, *frameHSVme = NULL, *frameHSVmeNeg = NULL;
 	/* Leitura de vídeo de um ficheiro */
 	capture = cvCaptureFromFile(videofile);
 	int key = 0;
@@ -98,7 +99,10 @@ int main(void)
 		cvPutText(frame, str, cvPoint(20, 100), &fontbkg, cvScalar(0, 0, 0));
 		cvPutText(frame, str, cvPoint(20, 100), &font, cvScalar(255, 255, 255));
 
-		if (frameHSV == NULL) frameHSV = cvCreateImage(cvGetSize(frameAux), 8, 3);
+		if (frameHSVmp == NULL) frameHSVmp = cvCreateImage(cvGetSize(frameAux), 8, 1);
+		if (frameHSVmd == NULL) frameHSVmd = cvCreateImage(cvGetSize(frameAux), 8, 1);
+		if (frameHSVme == NULL) frameHSVme = cvCreateImage(cvGetSize(frameAux), 8, 1);
+		if (frameHSVmeNeg == NULL) frameHSVmeNeg = cvCreateImage(cvGetSize(frameAux), 8, 1);
 		//if (bin == NULL) bin = cvCreateImage(cvGetSize(frameHSV), 8, 1);
 
 		if (gray == NULL) gray = cvCreateImage(cvGetSize(frameAux), 8, 1); // allocate a 1 channel byte image
@@ -112,67 +116,45 @@ int main(void)
 		
 
 		vc_bgr_to_rgb(frame, frameAux);
-		//vc_rgb_to_hsv(frameAux, frameHSV);
-		vc_rgb_to_hsv(frameAux);
 
-		vc_hsv_to_binary_in_range(frameAux, bin , 2);
+		//Procura por moedas de valor mais baixo (1 - 5 cent) AKA moedas pretas
+		vc_rgb_to_hsv_mp(frameAux, frameHSVmp);
 
-		//vc_rgb_to_gray(frameAux, gray);
+		//Procura por moedas douradas (10 - 50 cent)
+		vc_rgb_to_hsv_md(frameAux, frameHSVmd);
+
+		//Procura por moedas de euro (1 - 2 €)
+		vc_rgb_to_hsv_me(frameAux, frameHSVme);
+
+		//Inverte para detetar melhor as moedas
+		vc_gray_negative(frameHSVme, frameHSVmeNeg);
+
 		///*cvDilate(gray, grayAux, NULL, 15);
 		//cvErode(grayAux, grayAux1, NULL, 5);*/
-
 		//vc_gray_to_binary(gray, grayBin, 65);
-
-		//vc_binary_open(grayBin, grayBinAux, 15, 5);
-
-
-
+		//vc_binary_open(frameHSVmp, grayBinAux, 1, 1);
 		/*cvDilate(grayBin, grayBinAux, NULL, 15);
 		cvErode(grayBinAux, grayBin, NULL, 5);*/
 
-		blobs = vc_binary_blob_labellingOpencv(grayBinAux, BinBlob, &nblobs);
+		//Identificar blobs de cada tipo de moeda
+		//Moedas pretas
+		//blobsMP = vc_binary_blob_labellingOpencv(frameHSVmp, BinBlob, &nblobs);
 
-		vc_binary_blob_info(BinBlob, blobs, nblobs);
+		//vc_binary_blob_info(BinBlob, blobsMP, nblobs);
 
-		if (blobs != NULL)
-		{
-			//printf("\nNumber of labels: %d\n", nblobs);
-			for (i = 0; i < nblobs; i++)
-			{
-				int raio = (blobs[i].perimeter / (7));
-				if (blobs[i].area > 50 && blobs[i].yc - raio > 100 && blobs[i].yc + raio < frame->height) 
-				{
-					CvPoint center = cvPoint(blobs[i].xc, blobs[i].yc);
+		//if (blobsMP != NULL)
+		//{
+		//	//printf("\nNumber of labels: %d\n", nblobs);
+		//	for (i = 0; i < nblobs; i++)
+		//	{
+		//		
+		//	}
 
-					sprintf(str, "Area: %d", blobs[i].area);
-					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 60), &fontbkg, cvScalar(0, 0, 0, 0));
-					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 60), &font, cvScalar(255, 255, 255, 0));
-
-					sprintf(str, "Perimetro: %d", blobs[i].perimeter);
-					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 40), &fontbkg, cvScalar(0, 0, 0, 0));
-					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 40), &font, cvScalar(255, 255, 255, 0));
-
-					sprintf(str, "Calibre: %d", blobs[i].calibre);
-					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 20), &fontbkg, cvScalar(0, 0, 0, 0));
-					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 20), &font, cvScalar(255, 255, 255, 0));
-
-					sprintf(str, "Diametro: %f", blobs[i].diametro);
-					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 0), &fontbkg, cvScalar(0, 0, 0, 0));
-					cvPutText(frame, str, cvPoint(blobs[i].xc, blobs[i].yc - 0), &font, cvScalar(255, 255, 255, 0));
-					//cvCircle(frame, center, 3, CV_RGB(0, 0, 255), -1, 8, 0);
-					//cvCircle(frame, center, raio, CV_RGB(0, 255, 0), 3, 8, 0);
-				}
-				vc_draw_boundingbox(frame, blobs[i]);
-			}
-
-			free(blobs);
-		}
-
-		//vc_rgb_to_hsv(frameAux, frameBin);
-		//vc_binary_dilate(frameBin, frameBinAux, 5);
+		//	free(blobsMP);
+		//}
 
 		/* Exibe a frame */
-		cvShowImage("VC - TP2", bin);
+		cvShowImage("VC - TP2", frameHSVmp);
 
 		/* Sai da aplica��o, se o utilizador premir a tecla 'q' */
 		key = cvWaitKey(1);

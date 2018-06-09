@@ -29,7 +29,9 @@ typedef struct {
 } OVC;
 
 int vc_bgr_to_hsv(IplImage *srcdst);
-int vc_rgb_to_hsv(IplImage *src, IplImage *dst);
+int vc_rgb_to_hsv_mp(IplImage *src, IplImage *dst);
+int vc_rgb_to_hsv_md(IplImage *src, IplImage *dst);
+int vc_rgb_to_hsv_me(IplImage *src, IplImage *dst);
 int vc_binary_dilate(IplImage *src, IplImage *dst, int kernel);
 int vc_binary_open(IplImage *src, IplImage *dst, int sizeerode, int sizedilate);
 int vc_gray_gaussian_filter(IplImage *src, IplImage *dst, float n);
@@ -42,3 +44,4 @@ int vc_draw_boundingbox(IplImage *src, OVC blob);
 int vc_bgr_to_rgb(IplImage *src, IplImage *dst);
 int vc_rgb_to_hsv(IplImage *srcdst);
 int vc_hsv_to_binary_in_range(IplImage *src, IplImage *dst, unsigned short Cor);
+int vc_gray_negative(IplImage *src, IplImage *dst);
